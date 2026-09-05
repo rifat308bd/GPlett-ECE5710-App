@@ -170,38 +170,7 @@ const state = {
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
-const dom = {
-  sidebar: $('#sidebar'),
-  sidebarToggle: $('#sidebar-toggle'),
-  sidebarOverlay: $('#sidebar-overlay'),
-  chapterNav: $('#chapter-nav'),
-  sidebarStats: $('#sidebar-stats'),
-  searchInput: $('#search-input'),
-  searchClear: $('#search-clear'),
-  mainContent: $('#main-content'),
-  welcomeView: $('#welcome-view'),
-  pdfView: $('#pdf-view'),
-  pdfTitle: $('#pdf-title'),
-  pdfFrame: $('#pdf-frame'),
-  pdfBookmarkBtn: $('#pdf-bookmark-btn'),
-  pdfDownloadLink: $('#pdf-download-link'),
-  videoView: $('#video-view'),
-  videoTitle: $('#video-title'),
-  videoElement: $('#video-element'),
-  videoWatchedBtn: $('#video-watched-btn'),
-  videoBookmarkBtn: $('#video-bookmark-btn'),
-  videoDownloadLink: $('#video-download-link'),
-  prevVideo: $('#prev-video'),
-  nextVideo: $('#next-video'),
-  bookmarksView: $('#bookmarks-view'),
-  bookmarksList: $('#bookmarks-list'),
-  bookmarksToggle: $('#bookmarks-toggle'),
-  bookmarkCount: $('#bookmark-count'),
-  themeToggle: $('#theme-toggle'),
-  themeIconMoon: $('#theme-icon-moon'),
-  themeIconSun: $('#theme-icon-sun'),
-  toastContainer: $('#toast-container')
-};
+let dom = {};
 
 // ─── Helpers ─────────────────────────────────────────────────
 function saveState() {
@@ -211,7 +180,7 @@ function saveState() {
 }
 
 function encodeUrl(file) {
-  return BASE_URL + encodeURIComponent(file).replace(/%20/g, '%20');
+  return BASE_URL + encodeURIComponent(file);
 }
 
 function toast(message, icon = '✓') {
@@ -895,6 +864,40 @@ function bindEvents() {
 
 // ─── Initialization ──────────────────────────────────────────
 function init() {
+  // Populate DOM refs now that DOM is ready
+  dom = {
+    sidebar: $('#sidebar'),
+    sidebarToggle: $('#sidebar-toggle'),
+    sidebarOverlay: $('#sidebar-overlay'),
+    chapterNav: $('#chapter-nav'),
+    sidebarStats: $('#sidebar-stats'),
+    searchInput: $('#search-input'),
+    searchClear: $('#search-clear'),
+    mainContent: $('#main-content'),
+    welcomeView: $('#welcome-view'),
+    pdfView: $('#pdf-view'),
+    pdfTitle: $('#pdf-title'),
+    pdfFrame: $('#pdf-frame'),
+    pdfBookmarkBtn: $('#pdf-bookmark-btn'),
+    pdfDownloadLink: $('#pdf-download-link'),
+    videoView: $('#video-view'),
+    videoTitle: $('#video-title'),
+    videoElement: $('#video-element'),
+    videoWatchedBtn: $('#video-watched-btn'),
+    videoBookmarkBtn: $('#video-bookmark-btn'),
+    videoDownloadLink: $('#video-download-link'),
+    prevVideo: $('#prev-video'),
+    nextVideo: $('#next-video'),
+    bookmarksView: $('#bookmarks-view'),
+    bookmarksList: $('#bookmarks-list'),
+    bookmarksToggle: $('#bookmarks-toggle'),
+    bookmarkCount: $('#bookmark-count'),
+    themeToggle: $('#theme-toggle'),
+    themeIconMoon: $('#theme-icon-moon'),
+    themeIconSun: $('#theme-icon-sun'),
+    toastContainer: $('#toast-container')
+  };
+
   applyTheme();
   initFilters();
   bindEvents();
