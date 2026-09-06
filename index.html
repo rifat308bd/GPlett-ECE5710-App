@@ -132,6 +132,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
 .bookmark-remove:hover{color:var(--danger);border-color:var(--danger);background:rgba(239,68,68,.06)}
 .no-bookmarks{text-align:center;padding:48px 24px;color:var(--text-secondary)}
 .no-bookmarks-icon{font-size:3rem;margin-bottom:12px;opacity:.4}
+/* Video fallback */
+.video-fallback{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;text-align:center;background:var(--bg-surface);width:100%;min-height:300px}
+.fallback-icon{font-size:4rem;margin-bottom:16px;opacity:.6}
+.fallback-title{font-size:1.2rem;font-weight:600;color:var(--text-primary);margin-bottom:8px}
+.fallback-text{font-size:.9rem;color:var(--text-secondary);margin-bottom:24px;max-width:400px}
+.fallback-btn{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;background:var(--accent);color:#0f172a;border:none;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer;text-decoration:none;transition:all .2s;box-shadow:var(--shadow-md)}
+.fallback-btn:hover{background:var(--accent-hover);transform:translateY(-1px);box-shadow:var(--shadow-lg)}
 /* Toast */
 #toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:200;pointer-events:none}
 .toast{display:flex;align-items:center;gap:8px;padding:10px 18px;background:var(--sidebar-bg);color:#e2e8f0;border-radius:10px;font-size:.85rem;font-weight:500;box-shadow:var(--shadow-lg);animation:toastIn .35s ease,toastOut .35s ease forwards;animation-delay:0s,2.5s;pointer-events:auto}
@@ -187,10 +194,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
             <div class="content-header-left"><h2 id="pdf-title" class="content-title"></h2></div>
             <div class="content-actions">
               <button id="pdf-bookmark-btn" class="action-btn">&#x1F516; <span>Bookmark</span></button>
-              <a id="pdf-download-link" class="action-btn" target="_blank">&#x1F517; <span>Open in New Tab</span></a>
+              <a id="pdf-open-link" class="action-btn" target="_blank">&#x1F517; <span>Open PDF Directly</span></a>
             </div>
           </div>
-          <div class="pdf-container"><iframe id="pdf-frame" class="pdf-iframe"></iframe></div>
+          <div class="pdf-container"><iframe id="pdf-frame" class="pdf-iframe" allow="autoplay"></iframe></div>
         </div>
         <div id="video-view" class="content-view" style="display:none">
           <div class="content-header">
@@ -200,10 +207,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
               <button id="video-bookmark-btn" class="action-btn">&#x1F516; <span>Bookmark</span></button>
             </div>
           </div>
-          <div class="video-container"><video id="video-element" controls preload="metadata"></video></div>
+          <div class="video-container">
+            <video id="video-element" controls preload="metadata"></video>
+            <div id="video-fallback" class="video-fallback" style="display:none">
+              <div class="fallback-icon">&#x1F3AC;</div>
+              <div class="fallback-title">Video cannot be embedded</div>
+              <div class="fallback-text">Due to security restrictions, this video must be opened in a new tab.</div>
+              <a id="video-open-btn" class="fallback-btn" target="_blank">&#x25B6; Open Video in New Tab</a>
+            </div>
+          </div>
           <div class="video-nav">
             <button id="prev-video" class="nav-btn">&larr; <span>Previous</span></button>
-            <a id="video-download-link" class="nav-btn download-btn" target="_blank">&#x2B07; <span>Download</span></a>
+            <a id="video-download-link" class="nav-btn download-btn" target="_blank">&#x25B6; <span>Open in New Tab</span></a>
             <button id="next-video" class="nav-btn"><span>Next</span> &rarr;</button>
           </div>
         </div>
@@ -351,8 +366,9 @@ function totalProgress(){var a=allVideos(),w=0;a.forEach(function(v){if(watchedS
 var dom={};
 function initDom(){
   ['sidebar','sidebar-toggle','sidebar-overlay','chapter-nav','sidebar-stats','search-input','search-clear',
-   'main-content','welcome-view','pdf-view','pdf-title','pdf-frame','pdf-bookmark-btn','pdf-download-link',
+   'main-content','welcome-view','pdf-view','pdf-title','pdf-frame','pdf-bookmark-btn','pdf-open-link',
    'video-view','video-title','video-element','video-watched-btn','video-bookmark-btn','video-download-link',
+   'video-fallback','video-open-btn',
    'prev-video','next-video','bookmarks-view','bookmarks-list','bookmarks-toggle','bookmark-count',
    'theme-toggle','theme-icon','toast-container'].forEach(function(id){
     dom[id]=document.getElementById(id);
@@ -458,8 +474,9 @@ function renderWelcome(){
 function loadPdf(chId){
   hideAll();state.currentView='pdf';state.currentPdfChapter=chId;state.currentChapter=chId;state.currentVideoId=null;
   var ch=COURSE.chapters[chId],url=encUrl(ch.pdf);
+  var gdocsUrl='https://docs.google.com/gview?url='+encodeURIComponent(url)+'&embedded=true';
   dom['pdf-title'].textContent='Ch '+ch.id+': '+ch.title;
-  dom['pdf-frame'].src=url;dom['pdf-download-link'].href=url;
+  dom['pdf-frame'].src=gdocsUrl;dom['pdf-open-link'].href=url;
   dom['pdf-view'].style.display='';updatePdfBk();renderSidebar();
   history.replaceState(null,'','#pdf-'+chId);
 }
@@ -474,7 +491,19 @@ function loadVideo(vid,chId){
   hideAll();state.currentView='video';state.currentVideoId=vid;state.currentChapter=chId;state.currentPdfChapter=null;
   var ch=COURSE.chapters[chId],v=ch.videos.find(function(x){return x.id===vid}),url=encUrl(v.file);
   dom['video-title'].textContent=v.id+': '+v.title;
-  dom['video-element'].src=url;dom['video-download-link'].href=url;
+  dom['video-download-link'].href=url;
+  // Detect mixed content: HTTPS page loading HTTP resource
+  var isMixed=location.protocol==='https:'&&url.indexOf('http:')===0;
+  if(isMixed){
+    dom['video-element'].style.display='none';
+    dom['video-fallback'].style.display='';
+    dom['video-open-btn'].href=url;
+    dom['video-element'].removeAttribute('src');
+  }else{
+    dom['video-element'].style.display='';
+    dom['video-fallback'].style.display='none';
+    dom['video-element'].src=url;
+  }
   dom['video-view'].style.display='';state.openChapters[chId]=true;
   updateVideoBtns();updateVideoNav();renderSidebar();
   dom['main-content'].scrollTop=0;history.replaceState(null,'','#video-'+vid);
