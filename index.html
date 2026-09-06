@@ -4,12 +4,148 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ECE4710/5710: Battery Dynamics</title>
-  <link rel="stylesheet" href="styles.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔋</text></svg>">
+<style>
+/* === CSS Variables / Theming === */
+:root{--sidebar-bg:#0f172a;--sidebar-text:#cbd5e1;--sidebar-hover:#1e293b;--sidebar-active:#334155;--sidebar-width:320px;--accent:#ccb879;--accent-hover:#d4c48a;--accent-dark:#b8a465;--accent-bg:rgba(204,184,121,.1);--success:#22c55e;--success-bg:rgba(34,197,94,.1);--info:#3b82f6;--danger:#ef4444}
+[data-theme="light"]{--bg-primary:#f8fafc;--bg-surface:#fff;--bg-surface-hover:#f1f5f9;--text-primary:#1e293b;--text-secondary:#64748b;--text-muted:#94a3b8;--border:#e2e8f0;--shadow-sm:0 1px 2px rgba(0,0,0,.05);--shadow-md:0 4px 6px -1px rgba(0,0,0,.1);--shadow-lg:0 10px 15px -3px rgba(0,0,0,.1)}
+[data-theme="dark"]{--bg-primary:#0f172a;--bg-surface:#1e293b;--bg-surface-hover:#334155;--text-primary:#e2e8f0;--text-secondary:#94a3b8;--text-muted:#64748b;--border:#334155;--shadow-sm:0 1px 2px rgba(0,0,0,.3);--shadow-md:0 4px 6px -1px rgba(0,0,0,.4);--shadow-lg:0 10px 15px -3px rgba(0,0,0,.5)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:var(--bg-primary);color:var(--text-primary);line-height:1.6;transition:background .3s,color .3s}
+#app{display:flex;flex-direction:column;height:100vh}
+/* Header */
+#app-header{display:flex;align-items:center;gap:12px;padding:0 16px;height:56px;background:var(--sidebar-bg);color:#e2e8f0;z-index:100;flex-shrink:0}
+.header-title{flex:1;min-width:0;display:flex;align-items:baseline;gap:12px}
+.header-title h1{font-size:1.15rem;font-weight:700;color:var(--accent);white-space:nowrap}
+.header-subtitle{font-size:.82rem;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-actions{display:flex;align-items:center;gap:4px}
+.icon-btn{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border:none;background:0 0;color:#cbd5e1;border-radius:8px;cursor:pointer;transition:background .2s,color .2s;position:relative}
+.icon-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+.badge{position:absolute;top:4px;right:4px;background:var(--accent);color:#0f172a;font-size:.65rem;font-weight:700;min-width:16px;height:16px;border-radius:99px;display:none;align-items:center;justify-content:center;padding:0 4px}
+.badge.visible{display:flex}
+/* Layout */
+.app-layout{display:flex;flex:1;overflow:hidden}
+/* Sidebar */
+#sidebar{width:var(--sidebar-width);min-width:var(--sidebar-width);background:var(--sidebar-bg);display:flex;flex-direction:column;overflow:hidden;transition:margin-left .3s ease;border-right:1px solid rgba(255,255,255,.06)}
+#sidebar.collapsed{margin-left:calc(-1 * var(--sidebar-width))}
+.sidebar-search{position:relative;padding:12px 14px 8px}
+.search-icon{position:absolute;left:26px;top:50%;transform:translateY(-50%);color:#64748b;pointer-events:none}
+#search-input{width:100%;padding:9px 32px 9px 38px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:.85rem;outline:0;transition:border-color .2s}
+#search-input::placeholder{color:#64748b}
+#search-input:focus{border-color:var(--accent)}
+.search-clear{position:absolute;right:24px;top:50%;transform:translateY(-50%);background:0 0;border:none;color:#64748b;font-size:.85rem;cursor:pointer;display:none;padding:4px}
+.search-clear.visible{display:block}
+.search-clear:hover{color:#e2e8f0}
+.sidebar-filters{display:flex;gap:6px;padding:4px 14px 10px}
+.filter-btn{flex:1;padding:5px 8px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:#94a3b8;font-size:.72rem;font-weight:600;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.03em}
+.filter-btn:hover{border-color:#475569;color:#cbd5e1}
+.filter-btn.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+#chapter-nav{flex:1;overflow-y:auto;padding:0 8px 8px}
+#chapter-nav::-webkit-scrollbar{width:5px}
+#chapter-nav::-webkit-scrollbar-track{background:0 0}
+#chapter-nav::-webkit-scrollbar-thumb{background:#334155;border-radius:99px}
+.chapter-item{margin-bottom:2px}
+.chapter-header{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .15s;user-select:none}
+.chapter-header:hover{background:var(--sidebar-hover)}
+.chapter-header.active{background:var(--sidebar-active)}
+.chapter-chevron{transition:transform .25s ease;color:#475569;flex-shrink:0}
+.chapter-header.open .chapter-chevron{transform:rotate(90deg)}
+.chapter-number{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#1e293b;color:var(--accent);font-size:.78rem;font-weight:700;flex-shrink:0}
+.chapter-info{flex:1;min-width:0}
+.chapter-title-text{font-size:.82rem;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chapter-meta{font-size:.7rem;color:#64748b}
+.chapter-content{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.chapter-content.open{max-height:2000px}
+.sidebar-pdf-link{display:flex;align-items:center;gap:8px;padding:7px 12px 7px 50px;color:var(--accent);font-size:.8rem;font-weight:500;cursor:pointer;border-radius:6px;transition:background .15s;text-decoration:none}
+.sidebar-pdf-link:hover{background:var(--sidebar-hover)}
+.sidebar-pdf-link.active{background:var(--accent-bg)}
+.video-item{display:flex;align-items:center;gap:8px;padding:7px 12px 7px 50px;cursor:pointer;border-radius:6px;transition:background .15s}
+.video-item:hover{background:var(--sidebar-hover)}
+.video-item.active{background:var(--sidebar-active)}
+.video-item .video-icon{font-size:.75rem;color:#64748b;flex-shrink:0;width:16px;text-align:center}
+.video-item .video-label{flex:1;font-size:.8rem;color:#cbd5e1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.video-item.watched .video-icon{color:var(--success)}
+.video-item.watched .video-label{color:#64748b}
+.sidebar-stats{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);font-size:.72rem;color:#475569;display:flex;justify-content:space-between}
+.no-results{padding:24px 16px;text-align:center;color:#64748b;font-size:.85rem}
+.no-results-icon{font-size:2rem;margin-bottom:8px}
+#sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:49;opacity:0;transition:opacity .3s}
+#sidebar-overlay.active{display:block;opacity:1}
+/* Main content */
+#main-content{flex:1;overflow-y:auto;background:var(--bg-primary);transition:background .3s}
+.content-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;border-bottom:1px solid var(--border);background:var(--bg-surface);flex-wrap:wrap}
+.content-header-left{flex:1;min-width:0}
+.content-title{font-size:1.1rem;font-weight:600;color:var(--text-primary)}
+.content-actions{display:flex;gap:8px;flex-shrink:0}
+.action-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:.82rem;font-weight:500;cursor:pointer;transition:all .2s;text-decoration:none;white-space:nowrap}
+.action-btn:hover{background:var(--bg-surface-hover);color:var(--text-primary);border-color:var(--text-muted)}
+.action-btn.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.action-btn.active svg{fill:var(--accent)}
+.action-btn.watched-active{background:var(--success-bg);border-color:var(--success);color:var(--success)}
+/* PDF */
+.pdf-container{height:calc(100vh - 56px - 65px)}
+.pdf-iframe{width:100%;height:100%;border:none}
+/* Video */
+.video-container{background:#000;display:flex;align-items:center;justify-content:center;max-height:calc(100vh - 56px - 65px - 56px)}
+#video-element{width:100%;max-height:calc(100vh - 56px - 65px - 56px);background:#000}
+.video-nav{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-top:1px solid var(--border);background:var(--bg-surface)}
+.nav-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:.85rem;font-weight:500;cursor:pointer;transition:all .2s;text-decoration:none}
+.nav-btn:hover{background:var(--bg-surface-hover);color:var(--text-primary)}
+.nav-btn:disabled{opacity:.4;cursor:not-allowed}
+.download-btn{border-color:var(--accent);color:var(--accent)}
+.download-btn:hover{background:var(--accent-bg)}
+/* Welcome */
+#welcome-view{padding:32px 24px;max-width:1000px;margin:0 auto}
+.welcome-hero{text-align:center;margin-bottom:36px}
+.welcome-icon{font-size:3.5rem;margin-bottom:12px}
+.welcome-title{font-size:1.6rem;font-weight:700;color:var(--text-primary);margin-bottom:8px}
+.welcome-subtitle{font-size:.95rem;color:var(--text-secondary);max-width:500px;margin:0 auto}
+.course-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:32px}
+.stat-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;box-shadow:var(--shadow-sm);transition:transform .2s,box-shadow .2s}
+.stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.stat-number{font-size:1.8rem;font-weight:700;color:var(--accent)}
+.stat-label{font-size:.78rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.welcome-section-title{font-size:1.1rem;font-weight:600;color:var(--text-primary);margin-bottom:16px}
+.chapters-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.chapter-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;padding:18px;cursor:pointer;transition:all .2s;box-shadow:var(--shadow-sm);position:relative;overflow:hidden}
+.chapter-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent);transform:scaleX(0);transition:transform .3s}
+.chapter-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:var(--accent)}
+.chapter-card:hover::before{transform:scaleX(1)}
+.chapter-card-number{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:var(--accent-bg);color:var(--accent);font-weight:700;font-size:.85rem;margin-bottom:10px}
+.chapter-card-title{font-size:.92rem;font-weight:600;color:var(--text-primary);margin-bottom:8px;line-height:1.4}
+.chapter-card-meta{display:flex;align-items:center;justify-content:space-between;font-size:.75rem;color:var(--text-secondary)}
+.chapter-card-progress{margin-top:10px}
+.progress-bar{height:4px;background:var(--border);border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:99px;transition:width .5s ease}
+.progress-fill.complete{background:var(--success)}
+/* Bookmarks */
+.bookmarks-list{padding:16px 24px;max-width:800px}
+.bookmark-group-title{font-size:.82rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.bookmark-item{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;cursor:pointer;transition:all .2s}
+.bookmark-item:hover{border-color:var(--accent);box-shadow:var(--shadow-sm)}
+.bookmark-icon{font-size:1.2rem;flex-shrink:0}
+.bookmark-info{flex:1;min-width:0}
+.bookmark-title{font-size:.88rem;font-weight:500;color:var(--text-primary)}
+.bookmark-chapter{font-size:.75rem;color:var(--text-secondary)}
+.bookmark-remove{padding:4px 8px;background:0 0;border:1px solid transparent;border-radius:6px;color:var(--text-muted);cursor:pointer;font-size:.8rem;transition:all .2s}
+.bookmark-remove:hover{color:var(--danger);border-color:var(--danger);background:rgba(239,68,68,.06)}
+.no-bookmarks{text-align:center;padding:48px 24px;color:var(--text-secondary)}
+.no-bookmarks-icon{font-size:3rem;margin-bottom:12px;opacity:.4}
+/* Toast */
+#toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:200;pointer-events:none}
+.toast{display:flex;align-items:center;gap:8px;padding:10px 18px;background:var(--sidebar-bg);color:#e2e8f0;border-radius:10px;font-size:.85rem;font-weight:500;box-shadow:var(--shadow-lg);animation:toastIn .35s ease,toastOut .35s ease forwards;animation-delay:0s,2.5s;pointer-events:auto}
+.toast-icon{font-size:1.05rem}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes toastOut{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-8px) scale(.95)}}
+/* Responsive */
+@media(max-width:900px){.header-subtitle{display:none}.course-stats{grid-template-columns:repeat(2,1fr)}.chapters-grid{grid-template-columns:1fr}}
+@media(max-width:768px){#sidebar{position:fixed;top:56px;left:0;bottom:0;z-index:50;transform:translateX(-100%);transition:transform .3s ease;margin-left:0!important}#sidebar.mobile-open{transform:translateX(0)}.content-header{padding:12px 16px}.content-title{font-size:.95rem}.action-btn span,.nav-btn span{display:none}.video-nav{padding:10px 16px}#welcome-view{padding:20px 16px}.welcome-title{font-size:1.2rem}}
+@media(max-width:480px){.course-stats{grid-template-columns:1fr 1fr;gap:8px}.stat-card{padding:12px}.stat-number{font-size:1.4rem}}
+</style>
 </head>
 <body>
   <div id="app">
-    <!-- Header -->
     <header id="app-header">
       <button id="sidebar-toggle" class="icon-btn" title="Toggle sidebar">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -20,27 +156,21 @@
       </div>
       <div class="header-actions">
         <button id="bookmarks-toggle" class="icon-btn" title="View bookmarks">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
           <span class="badge" id="bookmark-count"></span>
         </button>
-        <button id="theme-toggle" class="icon-btn" title="Toggle dark/light theme">
-          <svg id="theme-icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          <svg id="theme-icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <button id="theme-toggle" class="icon-btn" title="Toggle theme">
+          <span id="theme-icon">🌙</span>
         </button>
       </div>
     </header>
-
-    <!-- Sidebar overlay (mobile) -->
     <div id="sidebar-overlay"></div>
-
-    <!-- Layout -->
     <div class="app-layout">
-      <!-- Sidebar -->
       <aside id="sidebar">
         <div class="sidebar-search">
           <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" id="search-input" placeholder="Search lectures..." autocomplete="off">
-          <button id="search-clear" class="search-clear" title="Clear search">✕</button>
+          <button id="search-clear" class="search-clear" title="Clear">&#x2715;</button>
         </div>
         <div class="sidebar-filters">
           <button class="filter-btn active" data-filter="all">All</button>
@@ -50,80 +180,413 @@
         <nav id="chapter-nav"></nav>
         <div id="sidebar-stats" class="sidebar-stats"></div>
       </aside>
-
-      <!-- Main content area -->
       <main id="main-content">
         <div id="welcome-view"></div>
         <div id="pdf-view" class="content-view" style="display:none">
           <div class="content-header">
-            <div class="content-header-left">
-              <h2 id="pdf-title" class="content-title"></h2>
-            </div>
+            <div class="content-header-left"><h2 id="pdf-title" class="content-title"></h2></div>
             <div class="content-actions">
-              <button id="pdf-bookmark-btn" class="action-btn" title="Bookmark this PDF">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-                <span>Bookmark</span>
-              </button>
-              <a id="pdf-download-link" class="action-btn" target="_blank" title="Open in new tab">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                <span>Open in New Tab</span>
-              </a>
+              <button id="pdf-bookmark-btn" class="action-btn">&#x1F516; <span>Bookmark</span></button>
+              <a id="pdf-download-link" class="action-btn" target="_blank">&#x1F517; <span>Open in New Tab</span></a>
             </div>
           </div>
-          <div class="pdf-container">
-            <iframe id="pdf-frame" class="pdf-iframe"></iframe>
-          </div>
+          <div class="pdf-container"><iframe id="pdf-frame" class="pdf-iframe"></iframe></div>
         </div>
-
         <div id="video-view" class="content-view" style="display:none">
           <div class="content-header">
-            <div class="content-header-left">
-              <h2 id="video-title" class="content-title"></h2>
-            </div>
+            <div class="content-header-left"><h2 id="video-title" class="content-title"></h2></div>
             <div class="content-actions">
-              <button id="video-watched-btn" class="action-btn" title="Mark as watched">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                <span>Watched</span>
-              </button>
-              <button id="video-bookmark-btn" class="action-btn" title="Bookmark this video">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-                <span>Bookmark</span>
-              </button>
+              <button id="video-watched-btn" class="action-btn">&#x2714; <span>Mark Watched</span></button>
+              <button id="video-bookmark-btn" class="action-btn">&#x1F516; <span>Bookmark</span></button>
             </div>
           </div>
-          <div class="video-container">
-            <video id="video-element" controls preload="metadata">
-              Your browser does not support this video format.
-            </video>
-          </div>
+          <div class="video-container"><video id="video-element" controls preload="metadata"></video></div>
           <div class="video-nav">
-            <button id="prev-video" class="nav-btn" title="Previous lecture">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-              <span>Previous</span>
-            </button>
-            <a id="video-download-link" class="nav-btn download-btn" target="_blank" title="Download video">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              <span>Download</span>
-            </a>
-            <button id="next-video" class="nav-btn" title="Next lecture">
-              <span>Next</span>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
+            <button id="prev-video" class="nav-btn">&larr; <span>Previous</span></button>
+            <a id="video-download-link" class="nav-btn download-btn" target="_blank">&#x2B07; <span>Download</span></a>
+            <button id="next-video" class="nav-btn"><span>Next</span> &rarr;</button>
           </div>
         </div>
-
         <div id="bookmarks-view" class="content-view" style="display:none">
-          <div class="content-header">
-            <h2 class="content-title">📑 Your Bookmarks</h2>
-          </div>
+          <div class="content-header"><h2 class="content-title">&#x1F4D1; Your Bookmarks</h2></div>
           <div id="bookmarks-list" class="bookmarks-list"></div>
         </div>
       </main>
     </div>
-
-    <!-- Toast notifications -->
     <div id="toast-container"></div>
   </div>
-  <script src="app.js"></script>
+<script>
+/* === Course Data === */
+var BASE_URL='http://mocha-java.uccs.edu/ECE5710/';
+var COURSE={chapters:[
+{id:0,title:'Course Introduction and Syllabus',pdf:'ECE5710-Notes00.pdf',videos:[
+{id:'0',title:'Course introduction and syllabus',file:'ECE5710 Topic 0.mov'}]},
+{id:1,title:'Battery Boot Camp',pdf:'ECE5710-Notes01.pdf',videos:[
+{id:'1.1',title:'Introduction to the course',file:'ECE5710 Topic 1.1.mov'},
+{id:'1.2',title:'How electrochemical cells work',file:'ECE5710 Topic 1.2.mov'},
+{id:'1.3',title:'Choice of active chemicals',file:'ECE5710 Topic 1.3.mov'},
+{id:'1.4',title:'Lithium-ion preview',file:'ECE5710 Topic 1.4.mov'},
+{id:'1.5',title:'Lithium-ion cell makeup',file:'ECE5710 Topic 1.5.mov'},
+{id:'1.6',title:'Availability of lithium',file:'ECE5710 Topic 1.6.mov'},
+{id:'1.7',title:'Manufacturing (1): Making the electrodes',file:'ECE5710 Topic 1.7.mov'},
+{id:'1.8',title:'Manufacturing (2): Assembling the cell',file:'ECE5710 Topic 1.8.mov'},
+{id:'1.9',title:'Failure modes',file:'ECE5710 Topic 1.9.mov'}]},
+{id:2,title:'Equivalent-Circuit Cell Models',pdf:'ECE5710-Notes02.pdf',videos:[
+{id:'2.1',title:'Open-circuit voltage and state of charge',file:'ECE5710 Topic 2.1.mov'},
+{id:'2.2',title:'Linear polarization',file:'ECE5710 Topic 2.2.mov'},
+{id:'2.3',title:'Converting to discrete time',file:'ECE5710 Topic 2.3.mov'},
+{id:'2.4',title:'Hysteresis voltages',file:'ECE5710 Topic 2.4.mov'},
+{id:'2.5',title:'The ESC cell model; OCV testing',file:'ECE5710 Topic 2.5.mov'},
+{id:'2.6',title:'Determining coulombic efficiency',file:'ECE5710 Topic 2.6.mov'},
+{id:'2.7',title:'Determining temperature-dependent OCV',file:'ECE5710 Topic 2.7.mov'},
+{id:'2.8',title:'Cell testing to determine the dynamic relationship',file:'ECE5710 Topic 2.8.mov'},
+{id:'2.9',title:'MATLAB code to create and simulate models',file:'ECE5710 Topic 2.9.mov'},
+{id:'2.10',title:'Example results',file:'ECE5710 Topic 2.10.mov'}]},
+{id:3,title:'Microscale Cell Models',pdf:'ECE5710-Notes03.pdf',videos:[
+{id:'3.1',title:'Chapter goals',file:'ECE5710 Topic 3.1.mov'},
+{id:'3.2',title:'Charge conservation in solid',file:'ECE5710 Topic 3.2.mov'},
+{id:'3.3',title:'Mass conservation in solid',file:'ECE5710 Topic 3.3.mov'},
+{id:'3.4',title:'Energy and thermodynamic potentials',file:'ECE5710 Topic 3.4.mov'},
+{id:'3.5',title:'Two laws of thermodynamics; direction of reaction',file:'ECE5710 Topic 3.5.mov'},
+{id:'3.6',title:'Electrochemical potential; Gibbs-Duhem equation',file:'ECE5710 Topic 3.6.mov'},
+{id:'3.7',title:'Relative and absolute activity',file:'ECE5710 Topic 3.7.mov'},
+{id:'3.8',title:'Basic characteristics of binary electrolytes',file:'ECE5710 Topic 3.8.mov'},
+{id:'3.9',title:'Electrolyte mass balance equation (step 1a)',file:'ECE5710 Topic 3.9.mov'},
+{id:'3.10',title:'Electrolyte mass balance equation (steps 1b-2)',file:'ECE5710 Topic 3.10.mov'},
+{id:'3.11',title:'Electrolyte mass balance equation (step 3)',file:'ECE5710 Topic 3.11.mov'},
+{id:'3.12',title:'Electrolyte mass balance equation (step 4)',file:'ECE5710 Topic 3.12.mov'},
+{id:'3.13',title:'Electrolyte charge balance: Electrolyte current',file:'ECE5710 Topic 3.13.mov'},
+{id:'3.14',title:'Electrolyte charge balance final form',file:'ECE5710 Topic 3.14.mov'},
+{id:'3.15',title:'Butler-Volmer equation: preliminaries',file:'ECE5710 Topic 3.15.mov'},
+{id:'3.16',title:'Butler-Volmer equation: derivation',file:'ECE5710 Topic 3.16.mov'},
+{id:'3.17',title:'Butler-Volmer equation: exchange-current density',file:'ECE5710 Topic 3.17.mov'},
+{id:'3.18',title:'Boundary conditions',file:'ECE5710 Topic 3.18.mov'},
+{id:'3.19',title:'Cell-level quantities',file:'ECE5710 Topic 3.19.mov'},
+{id:'3.20',title:'Single-particle model',file:'ECE5710 Topic 3.20.mov'}]},
+{id:4,title:'Continuum (Porous-Electrode) Cell Models',pdf:'ECE5710-Notes04.pdf',videos:[
+{id:'4.1',title:'Chapter goals',file:'ECE5710 Topic 4.1.mov'},
+{id:'4.2',title:'Indicator and Dirac delta functions',file:'ECE5710 Topic 4.2.mov'},
+{id:'4.3',title:'Gradient of an indicator function',file:'ECE5710 Topic 4.3.mov'},
+{id:'4.4',title:'Phase and intrinsic averages',file:'ECE5710 Topic 4.4.mov'},
+{id:'4.5',title:'Volume-averaging theorems 1 and 2',file:'ECE5710 Topic 4.5.mov'},
+{id:'4.6',title:'Volume-averaging theorem 3',file:'ECE5710 Topic 4.6.mov'},
+{id:'4.7',title:'Continuum models: Charge conservation in solid',file:'ECE5710 Topic 4.7.mov'},
+{id:'4.8',title:'Mass conservation in solid and electrolyte',file:'ECE5710 Topic 4.8.mov'},
+{id:'4.9',title:'Charge conservation in electrolyte',file:'ECE5710 Topic 4.9.mov'},
+{id:'4.10',title:'Cell-level quantities; PDE simulation methods',file:'ECE5710 Topic 4.10.mov'},
+{id:'4.11',title:'Implementation in COMSOL',file:'ECE5710 Topic 4.11.mov'},
+{id:'4.12',title:'COMSOL demonstration',file:'ECE5710 Topic 4.12.mov'}]},
+{id:5,title:'State-Space Models and the DRA',pdf:'ECE5710-Notes05.pdf',videos:[
+{id:'5.1',title:'Introduction to state-space models',file:'ECE5710 Topic 5.1.mov'},
+{id:'5.2',title:'Working with state-space systems',file:'ECE5710 Topic 5.2.mov'},
+{id:'5.3',title:'Discrete-time Markov parameters',file:'ECE5710 Topic 5.3.mov'},
+{id:'5.4',title:'Equations describing solid dynamics',file:'ECE5710 Topic 5.4.mov'},
+{id:'5.5',title:'Removing the integrator pole',file:'ECE5710 Topic 5.5.mov'},
+{id:'5.6',title:'State-space realization: Ho-Kalman method',file:'ECE5710 Topic 5.6.mov'},
+{id:'5.7',title:'Singular-value decomposition',file:'ECE5710 Topic 5.7.mov'},
+{id:'5.8',title:'Back to Ho-Kalman',file:'ECE5710 Topic 5.8.mov'},
+{id:'5.9',title:'Ho-Kalman summary and example',file:'ECE5710 Topic 5.9.mov'},
+{id:'5.10',title:'Discrete-time realization algorithm (DRA)',file:'ECE5710 Topic 5.10.mov'},
+{id:'5.11',title:'Example 1: Rational-polynomial transfer function',file:'ECE5710 Topic 5.11.mov'},
+{id:'5.12',title:'Example 2: Pole in H(s) at the origin',file:'ECE5710 Topic 5.12.mov'},
+{id:'5.13',title:'Example 3: Transcendental transfer function',file:'ECE5710 Topic 5.13.mov'}]},
+{id:6,title:'Reduced-Order Models of Cell Dynamics',pdf:'ECE5710-Notes06.pdf',videos:[
+{id:'6.1',title:'Approach and first steps',file:'ECE5710 Topic 6.1.mov'},
+{id:'6.2',title:'Next steps, leading to impedance ratio',file:'ECE5710 Topic 6.2.mov'},
+{id:'6.3',title:'Negative-electrode transfer functions',file:'ECE5710 Topic 6.3.mov'},
+{id:'6.4',title:'Positive-electrode transfer functions',file:'ECE5710 Topic 6.4.mov'},
+{id:'6.5',title:'One-dimensional model of ce(x,t): first steps',file:'ECE5710 Topic 6.5.mov'},
+{id:'6.6',title:'Solution to the homogeneous PDE',file:'ECE5710 Topic 6.6.mov'},
+{id:'6.7',title:'Solution to the forced PDE',file:'ECE5710 Topic 6.7.mov'},
+{id:'6.8',title:'One-dimensional model of phi_e(x,t)',file:'ECE5710 Topic 6.8.mov'},
+{id:'6.9',title:'Summary of transfer functions',file:'ECE5710 Topic 6.9.mov'},
+{id:'6.10',title:'Cell voltage',file:'ECE5710 Topic 6.10.mov'},
+{id:'6.11',title:'Full cell model',file:'ECE5710 Topic 6.11.mov'},
+{id:'6.12',title:'Model blending',file:'ECE5710 Topic 6.12.mov'}]},
+{id:7,title:'Thermal Modeling',pdf:'ECE5710-Notes07.pdf',videos:[
+{id:'7.1',title:'Introduction and preliminary definitions',file:'ECE5710 Topic 7.1.mov'},
+{id:'7.2',title:'Microscale thermal model',file:'ECE5710 Topic 7.2.mov'},
+{id:'7.3',title:'Continuum thermal model',file:'ECE5710 Topic 7.3.mov'},
+{id:'7.4',title:'Reduced-order model: transfer functions',file:'ECE5710 Topic 7.4.mov'},
+{id:'7.5',title:'ROM heat-generation terms qr and qi',file:'ECE5710 Topic 7.5.mov'},
+{id:'7.6',title:'ROM heat-generation terms qs and qe',file:'ECE5710 Topic 7.6.mov'},
+{id:'7.7',title:'Heat-flux terms',file:'ECE5710 Topic 7.7.mov'}]}
+]};
+
+/* === State === */
+var state={currentView:'welcome',currentChapter:null,currentVideoId:null,currentPdfChapter:null,
+searchQuery:'',filter:'all',openChapters:{},
+watched:JSON.parse(localStorage.getItem('ece5710_watched')||'[]'),
+bookmarks:JSON.parse(localStorage.getItem('ece5710_bookmarks')||'[]'),
+theme:localStorage.getItem('ece5710_theme')||'light'};
+// Convert arrays to lookup objects for O(1)
+var watchedSet={};state.watched.forEach(function(x){watchedSet[x]=true});
+var bookmarkSet={};state.bookmarks.forEach(function(x){bookmarkSet[x]=true});
+
+function saveState(){
+  localStorage.setItem('ece5710_watched',JSON.stringify(Object.keys(watchedSet)));
+  localStorage.setItem('ece5710_bookmarks',JSON.stringify(Object.keys(bookmarkSet)));
+  localStorage.setItem('ece5710_theme',state.theme);
+}
+function encUrl(f){return BASE_URL+encodeURIComponent(f)}
+function bk(type,id){return type+':'+id}
+function toast(msg,icon){
+  icon=icon||'✓';
+  var el=document.createElement('div');el.className='toast';
+  el.innerHTML='<span class="toast-icon">'+icon+'</span>'+msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(function(){el.remove()},3000);
+}
+function allVideos(){
+  var r=[];COURSE.chapters.forEach(function(ch){ch.videos.forEach(function(v){r.push({id:v.id,title:v.title,file:v.file,chapterId:ch.id,chapterTitle:ch.title})})});return r;
+}
+function videoIdx(vid){var a=allVideos();for(var i=0;i<a.length;i++){if(a[i].id===vid)return i}return -1}
+function chProgress(ch){
+  var t=ch.videos.length,w=0;ch.videos.forEach(function(v){if(watchedSet[v.id])w++});
+  return{total:t,watched:w,pct:t?Math.round(w/t*100):0};
+}
+function totalProgress(){var a=allVideos(),w=0;a.forEach(function(v){if(watchedSet[v.id])w++});return{total:a.length,watched:w}}
+
+/* === DOM === */
+var dom={};
+function initDom(){
+  ['sidebar','sidebar-toggle','sidebar-overlay','chapter-nav','sidebar-stats','search-input','search-clear',
+   'main-content','welcome-view','pdf-view','pdf-title','pdf-frame','pdf-bookmark-btn','pdf-download-link',
+   'video-view','video-title','video-element','video-watched-btn','video-bookmark-btn','video-download-link',
+   'prev-video','next-video','bookmarks-view','bookmarks-list','bookmarks-toggle','bookmark-count',
+   'theme-toggle','theme-icon','toast-container'].forEach(function(id){
+    dom[id]=document.getElementById(id);
+  });
+}
+
+/* === Theme === */
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme',state.theme);
+  if(dom['theme-icon'])dom['theme-icon'].textContent=state.theme==='light'?'🌙':'☀️';
+}
+function toggleTheme(){state.theme=state.theme==='light'?'dark':'light';applyTheme();saveState()}
+
+/* === Sidebar === */
+function toggleSidebar(){
+  if(window.innerWidth<=768){dom.sidebar.classList.toggle('mobile-open');dom['sidebar-overlay'].classList.toggle('active')}
+  else{dom.sidebar.classList.toggle('collapsed')}
+}
+function closeMobile(){dom.sidebar.classList.remove('mobile-open');dom['sidebar-overlay'].classList.remove('active')}
+
+function renderSidebar(){
+  var q=state.searchQuery.toLowerCase(),html='',hasResults=false;
+  COURSE.chapters.forEach(function(ch){
+    var prog=chProgress(ch),pdfBk=bookmarkSet[bk('pdf',ch.id)];
+    var fv=ch.videos.slice();
+    if(q){fv=fv.filter(function(v){return v.title.toLowerCase().indexOf(q)>=0||v.id.toLowerCase().indexOf(q)>=0||ch.title.toLowerCase().indexOf(q)>=0})}
+    if(state.filter==='unwatched'){fv=fv.filter(function(v){return !watchedSet[v.id]})}
+    if(state.filter==='bookmarked'){fv=fv.filter(function(v){return bookmarkSet[bk('video',v.id)]});if(!pdfBk&&fv.length===0)return}
+    var chMatch=q&&ch.title.toLowerCase().indexOf(q)>=0;
+    if(!chMatch&&fv.length===0&&state.filter!=='all')return;
+    if(q&&!chMatch&&fv.length===0)return;
+    if(chMatch)fv=ch.videos;
+    hasResults=true;
+    var isOpen=state.openChapters[ch.id]||!!q,isActive=state.currentChapter===ch.id;
+    html+='<div class="chapter-item"><div class="chapter-header'+(isOpen?' open':'')+(isActive?' active':'')+'" data-ch="'+ch.id+'">'+
+      '<svg class="chapter-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>'+
+      '<div class="chapter-number">'+ch.id+'</div><div class="chapter-info"><div class="chapter-title-text">'+ch.title+'</div>'+
+      '<div class="chapter-meta">'+ch.videos.length+' videos &middot; '+prog.pct+'% done</div></div></div>'+
+      '<div class="chapter-content'+(isOpen?' open':'')+'">'+
+      '<div class="sidebar-pdf-link'+(state.currentView==='pdf'&&state.currentPdfChapter===ch.id?' active':'')+'" data-ch="'+ch.id+'" data-type="pdf">'+
+      '<span>&#x1F4C4;</span> Lecture Notes (PDF)'+(pdfBk?'<span style="margin-left:auto;font-size:0.7rem">&#x1F516;</span>':'')+'</div>';
+    fv.forEach(function(v){
+      var w=watchedSet[v.id],bkd=bookmarkSet[bk('video',v.id)],act=state.currentVideoId===v.id;
+      html+='<div class="video-item'+(w?' watched':'')+(act?' active':'')+'" data-vid="'+v.id+'" data-ch="'+ch.id+'">'+
+        '<span class="video-icon">'+(w?'&#x2713;':'&#x25B6;')+'</span>'+
+        '<span class="video-label">'+v.id+': '+v.title+'</span>'+
+        (bkd?'<span style="font-size:0.7rem">&#x1F516;</span>':'')+'</div>';
+    });
+    html+='</div></div>';
+  });
+  if(!hasResults){html='<div class="no-results"><div class="no-results-icon">&#x1F50D;</div>No results found</div>'}
+  dom['chapter-nav'].innerHTML=html;
+  // Stats
+  var p=totalProgress();
+  dom['sidebar-stats'].innerHTML='<span>'+p.watched+' / '+p.total+' watched</span><span>'+Object.keys(bookmarkSet).length+' bookmarks</span>';
+  // Badge
+  var bc=Object.keys(bookmarkSet).length;
+  if(bc>0){dom['bookmark-count'].textContent=bc;dom['bookmark-count'].classList.add('visible')}
+  else{dom['bookmark-count'].classList.remove('visible')}
+  // Bind
+  dom['chapter-nav'].querySelectorAll('.chapter-header').forEach(function(el){
+    el.onclick=function(){var c=parseInt(el.getAttribute('data-ch'));state.openChapters[c]=!state.openChapters[c];renderSidebar()};
+  });
+  dom['chapter-nav'].querySelectorAll('.sidebar-pdf-link').forEach(function(el){
+    el.onclick=function(){loadPdf(parseInt(el.getAttribute('data-ch')));closeMobile()};
+  });
+  dom['chapter-nav'].querySelectorAll('.video-item').forEach(function(el){
+    el.onclick=function(){loadVideo(el.getAttribute('data-vid'),parseInt(el.getAttribute('data-ch')));closeMobile()};
+  });
+}
+
+/* === Views === */
+function hideAll(){
+  ['welcome-view','pdf-view','video-view','bookmarks-view'].forEach(function(id){document.getElementById(id).style.display='none'});
+}
+function showWelcome(){
+  hideAll();state.currentView='welcome';state.currentChapter=null;state.currentVideoId=null;state.currentPdfChapter=null;
+  dom['welcome-view'].style.display='';renderWelcome();renderSidebar();history.replaceState(null,'',location.pathname);
+}
+function renderWelcome(){
+  var p=totalProgress(),pct=p.total?Math.round(p.watched/p.total*100):0;
+  var cards='';COURSE.chapters.forEach(function(ch){
+    var cp=chProgress(ch);
+    cards+='<div class="chapter-card" data-ch="'+ch.id+'"><div class="chapter-card-number">'+ch.id+'</div>'+
+      '<div class="chapter-card-title">'+ch.title+'</div><div class="chapter-card-meta"><span>'+ch.videos.length+' videos</span>'+
+      '<span>'+cp.watched+'/'+cp.total+' watched</span></div><div class="chapter-card-progress"><div class="progress-bar">'+
+      '<div class="progress-fill'+(cp.pct===100?' complete':'')+'" style="width:'+cp.pct+'%"></div></div></div></div>';
+  });
+  dom['welcome-view'].innerHTML='<div class="welcome-hero"><div class="welcome-icon">&#x1F50B;</div>'+
+    '<div class="welcome-title">Battery Dynamics</div>'+
+    '<div class="welcome-subtitle">Modeling, Simulation, and Identification &mdash; UCCS ECE4710/5710</div></div>'+
+    '<div class="course-stats"><div class="stat-card"><div class="stat-number">'+COURSE.chapters.length+'</div><div class="stat-label">Chapters</div></div>'+
+    '<div class="stat-card"><div class="stat-number">'+p.total+'</div><div class="stat-label">Lectures</div></div>'+
+    '<div class="stat-card"><div class="stat-number">'+p.watched+'</div><div class="stat-label">Watched</div></div>'+
+    '<div class="stat-card"><div class="stat-number">'+pct+'%</div><div class="stat-label">Progress</div></div></div>'+
+    '<div class="welcome-section-title">Chapters</div><div class="chapters-grid">'+cards+'</div>';
+  dom['welcome-view'].querySelectorAll('.chapter-card').forEach(function(c){
+    c.onclick=function(){var id=parseInt(c.getAttribute('data-ch'));state.openChapters[id]=true;var ch=COURSE.chapters[id];if(ch.videos.length)loadVideo(ch.videos[0].id,id)};
+  });
+}
+
+/* === PDF === */
+function loadPdf(chId){
+  hideAll();state.currentView='pdf';state.currentPdfChapter=chId;state.currentChapter=chId;state.currentVideoId=null;
+  var ch=COURSE.chapters[chId],url=encUrl(ch.pdf);
+  dom['pdf-title'].textContent='Ch '+ch.id+': '+ch.title;
+  dom['pdf-frame'].src=url;dom['pdf-download-link'].href=url;
+  dom['pdf-view'].style.display='';updatePdfBk();renderSidebar();
+  history.replaceState(null,'','#pdf-'+chId);
+}
+function updatePdfBk(){
+  var k=bk('pdf',state.currentPdfChapter),active=bookmarkSet[k];
+  dom['pdf-bookmark-btn'].className='action-btn'+(active?' active':'');
+  dom['pdf-bookmark-btn'].querySelector('span').textContent=active?'Bookmarked':'Bookmark';
+}
+
+/* === Video === */
+function loadVideo(vid,chId){
+  hideAll();state.currentView='video';state.currentVideoId=vid;state.currentChapter=chId;state.currentPdfChapter=null;
+  var ch=COURSE.chapters[chId],v=ch.videos.find(function(x){return x.id===vid}),url=encUrl(v.file);
+  dom['video-title'].textContent=v.id+': '+v.title;
+  dom['video-element'].src=url;dom['video-download-link'].href=url;
+  dom['video-view'].style.display='';state.openChapters[chId]=true;
+  updateVideoBtns();updateVideoNav();renderSidebar();
+  dom['main-content'].scrollTop=0;history.replaceState(null,'','#video-'+vid);
+}
+function updateVideoBtns(){
+  var w=watchedSet[state.currentVideoId];
+  dom['video-watched-btn'].className='action-btn'+(w?' watched-active':'');
+  dom['video-watched-btn'].querySelector('span').textContent=w?'Watched ✓':'Mark Watched';
+  var k=bk('video',state.currentVideoId),b=bookmarkSet[k];
+  dom['video-bookmark-btn'].className='action-btn'+(b?' active':'');
+  dom['video-bookmark-btn'].querySelector('span').textContent=b?'Bookmarked':'Bookmark';
+}
+function updateVideoNav(){
+  var a=allVideos(),i=videoIdx(state.currentVideoId);
+  dom['prev-video'].disabled=i<=0;dom['next-video'].disabled=i>=a.length-1;
+}
+function navVideo(dir){
+  var a=allVideos(),i=videoIdx(state.currentVideoId)+dir;
+  if(i<0||i>=a.length)return;loadVideo(a[i].id,a[i].chapterId);
+}
+
+/* === Bookmarks === */
+function toggleBk(type,id){
+  var k=bk(type,id);
+  if(bookmarkSet[k]){delete bookmarkSet[k];toast('Bookmark removed','&#x1F5D1;')}
+  else{bookmarkSet[k]=true;toast('Bookmarked!','&#x1F516;')}
+  saveState();
+}
+function showBookmarks(){
+  hideAll();state.currentView='bookmarks';dom['bookmarks-view'].style.display='';renderBookmarks();renderSidebar();
+}
+function renderBookmarks(){
+  var keys=Object.keys(bookmarkSet);
+  if(!keys.length){dom['bookmarks-list'].innerHTML='<div class="no-bookmarks"><div class="no-bookmarks-icon">&#x1F516;</div><div>No bookmarks yet. Bookmark lectures and PDFs to access them quickly.</div></div>';return}
+  var html='',pdfs=[],vids=[];
+  keys.forEach(function(k){var p=k.split(':'),type=p[0],id=p[1];
+    if(type==='pdf'){var ch=COURSE.chapters[parseInt(id)];if(ch)pdfs.push({id:parseInt(id),title:ch.title})}
+    else{var av=allVideos(),v=av.find(function(x){return x.id===id});if(v)vids.push(v)}
+  });
+  if(pdfs.length){html+='<div class="bookmark-group-title">Lecture Notes</div>';pdfs.forEach(function(p){
+    html+='<div class="bookmark-item" data-type="pdf" data-id="'+p.id+'"><span class="bookmark-icon">&#x1F4C4;</span><div class="bookmark-info"><div class="bookmark-title">Ch '+p.id+': '+p.title+'</div></div><button class="bookmark-remove" data-key="pdf:'+p.id+'">&#x2715;</button></div>';
+  })}
+  if(vids.length){html+='<div class="bookmark-group-title">Videos</div>';vids.forEach(function(v){
+    html+='<div class="bookmark-item" data-type="video" data-id="'+v.id+'" data-ch="'+v.chapterId+'"><span class="bookmark-icon">&#x1F3AC;</span><div class="bookmark-info"><div class="bookmark-title">'+v.id+': '+v.title+'</div><div class="bookmark-chapter">Ch '+v.chapterId+': '+v.chapterTitle+'</div></div><button class="bookmark-remove" data-key="video:'+v.id+'">&#x2715;</button></div>';
+  })}
+  dom['bookmarks-list'].innerHTML=html;
+  dom['bookmarks-list'].querySelectorAll('.bookmark-item').forEach(function(el){
+    el.onclick=function(e){if(e.target.closest('.bookmark-remove'))return;var t=el.getAttribute('data-type'),id=el.getAttribute('data-id');
+      if(t==='pdf')loadPdf(parseInt(id));else loadVideo(id,parseInt(el.getAttribute('data-ch')))};
+  });
+  dom['bookmarks-list'].querySelectorAll('.bookmark-remove').forEach(function(btn){
+    btn.onclick=function(e){e.stopPropagation();delete bookmarkSet[btn.getAttribute('data-key')];saveState();renderBookmarks();renderSidebar();toast('Removed','&#x1F5D1;')};
+  });
+}
+
+/* === Progress === */
+function toggleWatched(vid){
+  if(watchedSet[vid]){delete watchedSet[vid];toast('Unwatched','&#x21A9;')}
+  else{watchedSet[vid]=true;toast('Watched!','&#x2705;')}
+  saveState();updateVideoBtns();renderSidebar();if(state.currentView==='welcome')renderWelcome();
+}
+
+/* === Search === */
+function handleSearch(){state.searchQuery=dom['search-input'].value.trim();dom['search-clear'].classList.toggle('visible',state.searchQuery.length>0);renderSidebar()}
+function clearSearch(){dom['search-input'].value='';state.searchQuery='';dom['search-clear'].classList.remove('visible');renderSidebar()}
+
+/* === Hash Nav === */
+function loadHash(){
+  var h=location.hash.slice(1);if(!h){showWelcome();return}
+  if(h.indexOf('pdf-')===0){var c=parseInt(h.replace('pdf-',''));if(COURSE.chapters[c]){loadPdf(c);return}}
+  if(h.indexOf('video-')===0){var vid=h.replace('video-',''),a=allVideos(),v=a.find(function(x){return x.id===vid});if(v){loadVideo(v.id,v.chapterId);return}}
+  if(h==='bookmarks'){showBookmarks();return}
+  showWelcome();
+}
+
+/* === Init === */
+function init(){
+  try{
+    initDom();applyTheme();
+    // Filters
+    document.querySelectorAll('.filter-btn').forEach(function(btn){
+      btn.onclick=function(){document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active')});btn.classList.add('active');state.filter=btn.getAttribute('data-filter');renderSidebar()};
+    });
+    // Events
+    dom['sidebar-toggle'].onclick=toggleSidebar;
+    dom['sidebar-overlay'].onclick=closeMobile;
+    dom['theme-toggle'].onclick=toggleTheme;
+    dom['search-input'].oninput=handleSearch;
+    dom['search-clear'].onclick=clearSearch;
+    dom['bookmarks-toggle'].onclick=function(){state.currentView==='bookmarks'?showWelcome():showBookmarks()};
+    dom['pdf-bookmark-btn'].onclick=function(){toggleBk('pdf',state.currentPdfChapter);updatePdfBk();renderSidebar()};
+    dom['video-watched-btn'].onclick=function(){toggleWatched(state.currentVideoId)};
+    dom['video-bookmark-btn'].onclick=function(){toggleBk('video',state.currentVideoId);updateVideoBtns();renderSidebar()};
+    dom['prev-video'].onclick=function(){navVideo(-1)};
+    dom['next-video'].onclick=function(){navVideo(1)};
+    dom['video-element'].onended=function(){if(!watchedSet[state.currentVideoId]){watchedSet[state.currentVideoId]=true;saveState();updateVideoBtns();renderSidebar();toast('Completed!','&#x1F389;')}};
+    document.onkeydown=function(e){
+      if(e.target===dom['search-input'])return;
+      if(e.key==='Escape')closeMobile();
+      if(state.currentView==='video'){if(e.key==='ArrowLeft'&&!dom['prev-video'].disabled){e.preventDefault();navVideo(-1)}if(e.key==='ArrowRight'&&!dom['next-video'].disabled){e.preventDefault();navVideo(1)}}
+      if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();dom['search-input'].focus()}
+    };
+    window.onhashchange=loadHash;
+    window.onresize=function(){if(window.innerWidth>768){dom.sidebar.classList.remove('mobile-open');dom['sidebar-overlay'].classList.remove('active')}};
+    renderSidebar();loadHash();
+    console.log('ECE5710 App initialized successfully');
+  }catch(err){
+    console.error('Init error:',err);
+    document.body.innerHTML='<div style="padding:40px;text-align:center"><h2>Error loading app</h2><pre>'+err.message+'</pre></div>';
+  }
+}
+document.addEventListener('DOMContentLoaded',init);
+</script>
 </body>
 </html>
