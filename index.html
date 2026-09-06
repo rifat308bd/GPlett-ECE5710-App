@@ -136,9 +136,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
 .video-fallback{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;text-align:center;background:var(--bg-surface);width:100%;min-height:300px}
 .fallback-icon{font-size:4rem;margin-bottom:16px;opacity:.6}
 .fallback-title{font-size:1.2rem;font-weight:600;color:var(--text-primary);margin-bottom:8px}
-.fallback-text{font-size:.9rem;color:var(--text-secondary);margin-bottom:24px;max-width:400px}
+.fallback-text{font-size:.9rem;color:var(--text-secondary);margin-bottom:24px;max-width:450px}
+.fallback-actions{display:flex;flex-direction:column;gap:10px;align-items:center;margin-bottom:20px}
 .fallback-btn{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;background:var(--accent);color:#0f172a;border:none;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer;text-decoration:none;transition:all .2s;box-shadow:var(--shadow-md)}
 .fallback-btn:hover{background:var(--accent-hover);transform:translateY(-1px);box-shadow:var(--shadow-lg)}
+.fallback-btn-secondary{display:inline-flex;align-items:center;gap:8px;padding:10px 24px;background:var(--bg-surface);color:var(--text-secondary);border:1px solid var(--border);border-radius:10px;font-size:.88rem;font-weight:500;cursor:pointer;text-decoration:none;transition:all .2s}
+.fallback-btn-secondary:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+.fallback-tip{font-size:.8rem;color:var(--text-muted);max-width:400px;padding:12px 16px;background:var(--accent-bg);border-radius:8px;border:1px solid rgba(204,184,121,.2)}
 /* Toast */
 #toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:200;pointer-events:none}
 .toast{display:flex;align-items:center;gap:8px;padding:10px 18px;background:var(--sidebar-bg);color:#e2e8f0;border-radius:10px;font-size:.85rem;font-weight:500;box-shadow:var(--shadow-lg);animation:toastIn .35s ease,toastOut .35s ease forwards;animation-delay:0s,2.5s;pointer-events:auto}
@@ -211,14 +215,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
             <video id="video-element" controls preload="metadata"></video>
             <div id="video-fallback" class="video-fallback" style="display:none">
               <div class="fallback-icon">&#x1F3AC;</div>
-              <div class="fallback-title">Video cannot be embedded</div>
-              <div class="fallback-text">Due to security restrictions, this video must be opened in a new tab.</div>
-              <a id="video-open-btn" class="fallback-btn" target="_blank">&#x25B6; Open Video in New Tab</a>
+              <div class="fallback-title" id="fallback-video-name"></div>
+              <div class="fallback-text">This video is hosted on an HTTP server and cannot be embedded on this HTTPS page.</div>
+              <div class="fallback-actions">
+                <a id="video-dl-btn" class="fallback-btn" target="_blank" download>&#x2B07; Download &amp; Play Locally</a>
+                <a class="fallback-btn-secondary" href="http://mocha-java.uccs.edu/ECE5710/index.html" target="_blank">&#x1F310; Visit Course Page (videos work there)</a>
+              </div>
+              <div class="fallback-tip">&#x1F4A1; Tip: For the best experience, open <strong>index.html</strong> from your local copy — videos play inline there.</div>
             </div>
           </div>
           <div class="video-nav">
             <button id="prev-video" class="nav-btn">&larr; <span>Previous</span></button>
-            <a id="video-download-link" class="nav-btn download-btn" target="_blank">&#x25B6; <span>Open in New Tab</span></a>
+            <a id="video-download-link" class="nav-btn download-btn" target="_blank" download>&#x2B07; <span>Download</span></a>
             <button id="next-video" class="nav-btn"><span>Next</span> &rarr;</button>
           </div>
         </div>
@@ -368,7 +376,7 @@ function initDom(){
   ['sidebar','sidebar-toggle','sidebar-overlay','chapter-nav','sidebar-stats','search-input','search-clear',
    'main-content','welcome-view','pdf-view','pdf-title','pdf-frame','pdf-bookmark-btn','pdf-open-link',
    'video-view','video-title','video-element','video-watched-btn','video-bookmark-btn','video-download-link',
-   'video-fallback','video-open-btn',
+   'video-fallback','video-dl-btn','fallback-video-name',
    'prev-video','next-video','bookmarks-view','bookmarks-list','bookmarks-toggle','bookmark-count',
    'theme-toggle','theme-icon','toast-container'].forEach(function(id){
     dom[id]=document.getElementById(id);
@@ -497,7 +505,8 @@ function loadVideo(vid,chId){
   if(isMixed){
     dom['video-element'].style.display='none';
     dom['video-fallback'].style.display='';
-    dom['video-open-btn'].href=url;
+    dom['video-dl-btn'].href=url;
+    dom['fallback-video-name'].textContent=v.id+': '+v.title;
     dom['video-element'].removeAttribute('src');
   }else{
     dom['video-element'].style.display='';
